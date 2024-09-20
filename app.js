@@ -16,7 +16,7 @@ app.use(cors({
 app.use('/files', express.static('files'));
 
 // MongoDB connection
-const mongoUrl = "mongodb+srv://user1:shereef%40123@cluster0.mudxo.mongodb.net/myDatabase?retryWrites=true&w=majority";
+const mongoUrl='mongodb://localhost:27017/pdf_maker'
 mongoose.connect(mongoUrl).then(() => {
     console.log("Connected to database");
 }).catch(e => {
@@ -60,7 +60,6 @@ app.get('/get-files', async (req, res) => {
     }
 });
 
-// Endpoint to download selected pages
 
 app.post('/download-selected-pages', async (req, res) => {
     const { pdfFile, selectedPages } = req.body;
@@ -97,7 +96,6 @@ app.post('/download-selected-pages', async (req, res) => {
 });
 
 
-// Endpoint to delete a PDF file
 app.delete('/delete-file/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -107,13 +105,11 @@ app.delete('/delete-file/:id', async (req, res) => {
             return res.status(404).send('PDF not found');
         }
 
-        // Delete the file from the filesystem
         const filePath = path.join(__dirname, 'files', pdfRecord.pdf);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
 
-        // Delete the record from the database
         await pdfSchema.findByIdAndDelete(id);
 
         res.send({ status: 'OK' });
