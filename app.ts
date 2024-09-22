@@ -1,34 +1,33 @@
+import express, { Request, Response } from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import multer, { FileFilterCallback } from 'multer';
+import fs from 'fs';
+import path from 'path';
+import { PDFDocument } from 'pdf-lib';
 
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const { PDFDocument } = require('pdf-lib');
 const app = express();
 
 app.use(express.json());
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true
-  }));
+}));
 app.use('/files', express.static('files'));
 
 // MongoDB connection
-const mongoUrl='mongodb://localhost:27017/pdf_maker'
+const mongoUrl = 'mongodb://localhost:27017/pdf_maker';
 mongoose.connect(mongoUrl).then(() => {
     console.log("Connected to database");
-}).catch(e => {
-    console.log(e);
+}).catch((e: Error) => {
+    console.log(e.message);
 });
 
-// Multer setup
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
         cb(null, './files');
     },
-    filename: function (req, file, cb) {
+    filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
         const uniqueSuffix = Date.now();
         cb(null, uniqueSuffix + file.originalname);
     }
@@ -38,31 +37,37 @@ const upload = multer({ storage: storage });
 require("./pdfDetails");
 const pdfSchema = mongoose.model('pdfDetails');
 
-app.post('/upload-files', upload.single('file'), async (req, res) => {
+// File upload route
+app.post('/upload-files', upload.single('file'), async (req: Request, res: Response) => {
     const title = req.body.title;
-    const fileName = req.file.filename;
-    console.log(fileName)
+    const fileName = req.file?.filename;
+
+    if (!fileName) {
+        return res.status(400).send({ status: "error", message: "No file uploaded" });
+    }
+
     try {
         await pdfSchema.create({ title: title, pdf: fileName });
         res.send({ status: "OK" });
     } catch (error) {
-        res.json({ status: error });
+        res.status(500).json({ status: "error", message: (error as Error).message });
     }
 });
 
-app.get('/get-files', async (req, res) => {
+// Fetch all files
+app.get('/get-files', async (req: Request, res: Response) => {
     try {
         pdfSchema.find({}).then(data => {
             res.send({ status: "ok", data: data });
         });
     } catch (error) {
-        res.status(500).send({ status: "error", message: error.message });
+        res.status(500).send({ status: "error", message: (error as Error).message });
     }
 });
 
-
-app.post('/download-selected-pages', async (req, res) => {
-    const { pdfFile, selectedPages } = req.body;
+// Download selected pages route
+app.post('/download-selected-pages', async (req: Request, res: Response) => {
+    const { pdfFile, selectedPages }: { pdfFile: string, selectedPages: number[] } = req.body;
 
     try {
         const filePath = path.join(__dirname, 'files', pdfFile);
@@ -76,7 +81,6 @@ app.post('/download-selected-pages', async (req, res) => {
         const newPdfDoc = await PDFDocument.create();
 
         for (const pageNumber of selectedPages) {
-            console.log(`Adding page number: ${pageNumber}`);
             if (pageNumber > 0 && pageNumber <= pdfDoc.getPageCount()) {
                 const [page] = await newPdfDoc.copyPages(pdfDoc, [pageNumber - 1]);
                 newPdfDoc.addPage(page);
@@ -86,7 +90,7 @@ app.post('/download-selected-pages', async (req, res) => {
         const pdfBytes = await newPdfDoc.save();
         res.setHeader('Content-Disposition', 'attachment; filename=selected_pages.pdf');
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Length', pdfBytes.length); 
+        res.setHeader('Content-Length', pdfBytes.length.toString());
         res.end(pdfBytes);
 
     } catch (error) {
@@ -95,8 +99,8 @@ app.post('/download-selected-pages', async (req, res) => {
     }
 });
 
-
-app.delete('/delete-file/:id', async (req, res) => {
+// Delete file route
+app.delete('/delete-file/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
