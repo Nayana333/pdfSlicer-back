@@ -1,10 +1,13 @@
+
+
 import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import multer, { FileFilterCallback } from 'multer';
+import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
+import PdfDetails from './pdfDetails'; 
 
 const app = express();
 
@@ -23,19 +26,18 @@ mongoose.connect(mongoUrl).then(() => {
     console.log(e.message);
 });
 
+// Multer storage configuration
 const storage = multer.diskStorage({
-    destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
+    destination: (req: Request, file: Express.Multer.File, cb) => {
         cb(null, './files');
     },
-    filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
+    filename: (req: Request, file: Express.Multer.File, cb) => {
         const uniqueSuffix = Date.now();
         cb(null, uniqueSuffix + file.originalname);
     }
 });
 
 const upload = multer({ storage: storage });
-require("./pdfDetails");
-const pdfSchema = mongoose.model('pdfDetails');
 
 // File upload route
 app.post('/upload-files', upload.single('file'), async (req: Request, res: Response) => {
@@ -47,7 +49,7 @@ app.post('/upload-files', upload.single('file'), async (req: Request, res: Respo
     }
 
     try {
-        await pdfSchema.create({ title: title, pdf: fileName });
+        await PdfDetails.create({ title: title, pdf: fileName });
         res.send({ status: "OK" });
     } catch (error) {
         res.status(500).json({ status: "error", message: (error as Error).message });
@@ -57,9 +59,8 @@ app.post('/upload-files', upload.single('file'), async (req: Request, res: Respo
 // Fetch all files
 app.get('/get-files', async (req: Request, res: Response) => {
     try {
-        pdfSchema.find({}).then(data => {
-            res.send({ status: "ok", data: data });
-        });
+        const data = await PdfDetails.find({});
+        res.send({ status: "ok", data: data });
     } catch (error) {
         res.status(500).send({ status: "error", message: (error as Error).message });
     }
@@ -104,7 +105,7 @@ app.delete('/delete-file/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
-        const pdfRecord = await pdfSchema.findById(id);
+        const pdfRecord = await PdfDetails.findById(id);
         if (!pdfRecord) {
             return res.status(404).send('PDF not found');
         }
@@ -114,8 +115,7 @@ app.delete('/delete-file/:id', async (req: Request, res: Response) => {
             fs.unlinkSync(filePath);
         }
 
-        await pdfSchema.findByIdAndDelete(id);
-
+        await PdfDetails.findByIdAndDelete(id);
         res.send({ status: 'OK' });
     } catch (error) {
         console.error('Error deleting file:', error);

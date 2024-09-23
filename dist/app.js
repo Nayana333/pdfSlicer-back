@@ -19,6 +19,7 @@ const multer_1 = __importDefault(require("multer"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const pdf_lib_1 = require("pdf-lib");
+const pdfDetails_1 = __importDefault(require("./pdfDetails"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)({
@@ -33,29 +34,17 @@ mongoose_1.default.connect(mongoUrl).then(() => {
 }).catch((e) => {
     console.log(e.message);
 });
-// Multer setup
-// const storage = multer.diskStorage({
-//     destination: function (req: Request, file: Express.Multer.File, cb: FileFilterCallback) {
-//         cb(null, './files');
-//     },
-//     filename: function (req: Request, file: Express.Multer.File, cb: FileFilterCallback) {
-//         const uniqueSuffix = Date.now();
-//         cb(null, uniqueSuffix + file.originalname);
-//     }
-// });
-// Multer setup
+// Multer storage configuration
 const storage = multer_1.default.diskStorage({
-    destination: function (req, file, cb) {
+    destination: (req, file, cb) => {
         cb(null, './files');
     },
-    filename: function (req, file, cb) {
+    filename: (req, file, cb) => {
         const uniqueSuffix = Date.now();
         cb(null, uniqueSuffix + file.originalname);
     }
 });
 const upload = (0, multer_1.default)({ storage: storage });
-require("./pdfDetails");
-const pdfSchema = mongoose_1.default.model('pdfDetails');
 // File upload route
 app.post('/upload-files', upload.single('file'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -65,7 +54,7 @@ app.post('/upload-files', upload.single('file'), (req, res) => __awaiter(void 0,
         return res.status(400).send({ status: "error", message: "No file uploaded" });
     }
     try {
-        yield pdfSchema.create({ title: title, pdf: fileName });
+        yield pdfDetails_1.default.create({ title: title, pdf: fileName });
         res.send({ status: "OK" });
     }
     catch (error) {
@@ -75,9 +64,8 @@ app.post('/upload-files', upload.single('file'), (req, res) => __awaiter(void 0,
 // Fetch all files
 app.get('/get-files', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        pdfSchema.find({}).then(data => {
-            res.send({ status: "ok", data: data });
-        });
+        const data = yield pdfDetails_1.default.find({});
+        res.send({ status: "ok", data: data });
     }
     catch (error) {
         res.status(500).send({ status: "error", message: error.message });
@@ -115,7 +103,7 @@ app.post('/download-selected-pages', (req, res) => __awaiter(void 0, void 0, voi
 app.delete('/delete-file/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     try {
-        const pdfRecord = yield pdfSchema.findById(id);
+        const pdfRecord = yield pdfDetails_1.default.findById(id);
         if (!pdfRecord) {
             return res.status(404).send('PDF not found');
         }
@@ -123,7 +111,7 @@ app.delete('/delete-file/:id', (req, res) => __awaiter(void 0, void 0, void 0, f
         if (fs_1.default.existsSync(filePath)) {
             fs_1.default.unlinkSync(filePath);
         }
-        yield pdfSchema.findByIdAndDelete(id);
+        yield pdfDetails_1.default.findByIdAndDelete(id);
         res.send({ status: 'OK' });
     }
     catch (error) {
