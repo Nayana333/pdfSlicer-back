@@ -13,18 +13,34 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: process.env.ORIGINFRONTEND,
     credentials: true
 }));
 app.use('/files', express.static('files'));
 
 // MongoDB connection
-const mongoUrl = 'mongodb://localhost:27017/pdf_maker';
-mongoose.connect(mongoUrl).then(() => {
-    console.log("Connected to database");
-}).catch((e: Error) => {
-    console.log(e.message);
-});
+// const mongoUrl = process.env.MONGOURL;
+// mongoose.connect(mongoUrl).then(() => {
+//     console.log("Connected to database");
+// }).catch((e: Error) => {
+//     console.log(e.message);
+
+
+const mongoUrl = process.env.MONGOURL;
+
+if (!mongoUrl) {
+    throw new Error("MongoDB connection URL is missing");
+}
+
+mongoose.connect(mongoUrl)
+    .then(() => {
+        console.log("Connected to database");
+    })
+    .catch((e: Error) => {
+        console.log(e.message);
+    });
+
+// });
 
 // Multer storage configuration
 const storage = multer.diskStorage({
