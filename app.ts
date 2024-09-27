@@ -10,12 +10,12 @@ import { PDFDocument } from 'pdf-lib';
 import PdfDetails from './pdfDetails'; 
 
 const app = express();
-
-app.use(express.json());
 app.use(cors({
     origin: "*",
     credentials: true
 }));
+app.use(express.json({limit:"250mb"}));
+app.use(express.urlencoded({extended:true,limit:"200mb"}))
 app.use('/files', express.static('files'));
 
 // MongoDB connection
