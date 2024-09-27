@@ -11,7 +11,7 @@ import PdfDetails from './pdfDetails';
 
 const app = express();
 app.use(cors({
-    origin: "*",
+    origin: process.env.ORIGINFRONTEND || "https://pagesnip.vercel.app",
     credentials: true
 }));
 app.use(express.json({limit:"250mb"}));
