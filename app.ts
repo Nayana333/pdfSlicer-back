@@ -59,7 +59,8 @@ const upload = multer({ storage: storage });
 app.post('/upload-files', upload.single('file'), async (req: Request, res: Response) => {
     const title = req.body.title;
     const fileName = req.file?.filename;
-
+    console.log("dddd");
+    
     if (!fileName) {
         return res.status(400).send({ status: "error", message: "No file uploaded" });
     }
