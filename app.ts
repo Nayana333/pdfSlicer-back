@@ -26,7 +26,7 @@ app.use('/files', express.static('files'));
 //     console.log(e.message);
 
 
-const mongoUrl = process.env.MONGOURL;
+const mongoUrl = process.env.MONGOURL || "mongodb+srv://nrnayana3:SA1zyuZNrVFdjSHL@cluster0.nnp6k.mongodb.net/pagesnip?retryWrites=true&w=majority";
 
 if (!mongoUrl) {
     throw new Error("MongoDB connection URL is missing");
