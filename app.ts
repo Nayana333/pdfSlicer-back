@@ -13,7 +13,7 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-    origin: process.env.ORIGINFRONTEND,
+    origin: "*",
     credentials: true
 }));
 app.use('/files', express.static('files'));
