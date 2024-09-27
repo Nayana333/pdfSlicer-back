@@ -7,15 +7,17 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
-import PdfDetails from './pdfDetails'; 
+import PdfDetails from './pdfDetails';
+import { config } from "dotenv"
+config()
 
 const app = express();
 app.use(cors({
     origin: process.env.ORIGINFRONTEND || "https://pagesnip.vercel.app",
     credentials: true
 }));
-app.use(express.json({limit:"250mb"}));
-app.use(express.urlencoded({extended:true,limit:"200mb"}))
+app.use(express.json({ limit: "250mb" }));
+app.use(express.urlencoded({ extended: true, limit: "200mb" }))
 app.use('/files', express.static('files'));
 
 // MongoDB connection
@@ -26,8 +28,8 @@ app.use('/files', express.static('files'));
 //     console.log(e.message);
 
 
-const mongoUrl = process.env.MONGOURL || "mongodb+srv://nrnayana3:SA1zyuZNrVFdjSHL@cluster0.nnp6k.mongodb.net/pagesnip?retryWrites=true&w=majority";
-
+const mongoUrl = process.env.MONGOURL;
+console.log(mongoUrl)
 if (!mongoUrl) {
     throw new Error("MongoDB connection URL is missing");
 }
@@ -37,7 +39,7 @@ mongoose.connect(mongoUrl)
         console.log("Connected to database");
     })
     .catch((e: Error) => {
-        console.log(e.message);
+        console.log(e);
     });
 
 // });
@@ -60,7 +62,7 @@ app.post('/upload-files', upload.single('file'), async (req: Request, res: Respo
     const title = req.body.title;
     const fileName = req.file?.filename;
     console.log("dddd");
-    
+
     if (!fileName) {
         return res.status(400).send({ status: "error", message: "No file uploaded" });
     }
