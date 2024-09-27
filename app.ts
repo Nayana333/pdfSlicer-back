@@ -8,7 +8,9 @@ import fs from 'fs';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
 import PdfDetails from './pdfDetails';
-import { config } from "dotenv"
+import { config } from "dotenv";
+import logger from 'morgan';
+
 config()
 
 const app = express();
@@ -16,6 +18,7 @@ app.use(cors({
     origin: process.env.ORIGINFRONTEND || "https://pagesnip.vercel.app",
     credentials: true
 }));
+app.use(logger('dev'));
 app.use(express.json({ limit: "250mb" }));
 app.use(express.urlencoded({ extended: true, limit: "200mb" }))
 app.use('/files', express.static('files'));
